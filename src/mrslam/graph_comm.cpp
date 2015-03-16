@@ -40,7 +40,7 @@ GraphComm::GraphComm (MRGraphSLAM* gslam, int idRobot, int nRobots, std::string 
   _gslam = gslam;
 
   std::stringstream my_addr;
-  my_addr << base_addr << idRobot+1;
+  my_addr << base_addr << idRobot + IP_OFFSET;
   std::cerr << "My address: " << my_addr.str() << std::endl;
 
   _iSock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
@@ -103,7 +103,7 @@ bool GraphComm::robotsInRange(std::vector<int>& robotsToSend){
 
 void GraphComm::send(RobotMessage* cmsg, int rto){
   std::stringstream to_addr;
-  to_addr << _base_addr << rto +1;
+  to_addr << _base_addr << rto + IP_OFFSET;
 
   struct sockaddr_in toSockAddr;
   toSockAddr.sin_family=AF_INET;

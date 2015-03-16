@@ -53,6 +53,7 @@ typedef std::queue<StampedRobotMessage> msgQueue;
 class GraphComm
 {
  public:
+  static const int IP_OFFSET = 100 + 1;
 
   GraphComm(MRGraphSLAM* gslam, int idRobot, int nRobots, std::string base_addr, int typeExperiment);
   /*
