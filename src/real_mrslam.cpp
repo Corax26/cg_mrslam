@@ -125,6 +125,7 @@ int main(int argc, char **argv)
 
       gslam.addDataSM(odomPosk, laseri);
       gslam.findConstraints();
+      gslam.findInterRobotConstraints();
       gslam.optimize(5);
 
       currEst = gslam.lastVertex()->estimate();
