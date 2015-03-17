@@ -57,7 +57,8 @@ void GraphSLAM::init(double resolution, double kernelRadius, int windowLoopClosu
 
   //Init scan matchers
   _closeMatcher.initializeKernel(resolution, kernelRadius);
-  _closeMatcher.initializeGrid(Vector2f(-15, -15), Vector2f(15, 15), resolution);
+  // Was (-15, -15), (15, 15)
+  _closeMatcher.initializeGrid(Vector2f(-30, -30), Vector2f(30, 30), resolution);
   _LCMatcher.initializeKernel(0.1, 0.5); //before 0.1, 0.5
   _LCMatcher.initializeGrid(Vector2f(-35, -35), Vector2f(35, 35), 0.1); //before 0.1
   cerr << "Grids initialized\n";
