@@ -146,8 +146,10 @@ void GraphComm::sendToThrd(){
 	CondensedGraphMessage* gmsg = _gslam->constructCondensedGraphMessage(rto);
 	//GraphMessage* gmsg = _gslam->constructGraphMessage(rto);
 
-	if (gmsg)
+	if (gmsg){
+	  std::cerr << "Send condensed graph" << std::endl;
 	  send(gmsg, rto);
+	}
       }
     }
     usleep(150000);
