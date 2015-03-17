@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 
   gslam.setInitialData(currEst, odomPosk_1, rlaser);
 
-  GraphRosPublisher graphPublisher(gslam.graph(), fixedFrame);
+  GraphRosPublisher graphPublisher(gslam, fixedFrame);
 
   ros::Rate loop_rate(10);
   while (ros::ok()){

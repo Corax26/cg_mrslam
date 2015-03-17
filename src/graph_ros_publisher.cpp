@@ -28,29 +28,33 @@
 
 #include "graph_ros_publisher.h"
 
-GraphRosPublisher::GraphRosPublisher(OptimizableGraph* graph, string fixedFrame){
-  _graph = graph;
-  _fixedFrame = fixedFrame;
+GraphRosPublisher::GraphRosPublisher(GraphSLAM& graph, string fixedFrame)
+    : _graph(graph), _fixedFrame(fixedFrame) {
 
-  _pubtj = _nh.advertise<geometry_msgs::PoseArray>("trajectory", 1);
-  _publm = _nh.advertise<sensor_msgs::PointCloud>("lasermap", 1);
+  _pubPoseSelf = _nh.advertise<geometry_msgs::PoseArray>("pose_self", 1);
+  _pubPoseOthers = _nh.advertise<geometry_msgs::PoseArray>("pose_others", 1);
+  _pubMapSelf = _nh.advertise<sensor_msgs::PointCloud>("map_self", 1);
+  _pubMapOthers = _nh.advertise<sensor_msgs::PointCloud>("map_others", 1);
 }
 
 void GraphRosPublisher::publishGraph(){
 
-  assert(_graph && "Cannot publish: undefined graph");
+  assert(_graph.graph() && "Cannot publish: undefined graph");
 
-  geometry_msgs::PoseArray traj;
-  sensor_msgs::PointCloud pcloud;
-  traj.poses.resize(_graph->vertices().size());
-  pcloud.points.clear();
-  int i = 0;
-  for (OptimizableGraph::VertexIDMap::iterator it=_graph->vertices().begin(); it!=_graph->vertices().end(); ++it) {
+  geometry_msgs::PoseArray pose_self;
+  sensor_msgs::PointCloud map_self;
+  geometry_msgs::PoseArray pose_others;
+  sensor_msgs::PointCloud map_others;
+  for (OptimizableGraph::VertexIDMap::iterator it=_graph.graph()->vertices().begin(); it!=_graph.graph()->vertices().end(); ++it) {
     VertexSE2* v = (VertexSE2*) (it->second);
-    traj.poses[i].position.x = v->estimate().translation().x();
-    traj.poses[i].position.y = v->estimate().translation().y();
-    traj.poses[i].position.z = 0;
-    traj.poses[i].orientation = tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
+    geometry_msgs::PoseArray& pose_list = _graph.isMyVertex(v)
+					    ? pose_self : pose_others;
+    pose_list.poses.resize(pose_list.poses.size() + 1);
+    geometry_msgs::Pose& new_pose = pose_list.poses.back();
+    new_pose.position.x = v->estimate().translation().x();
+    new_pose.position.y = v->estimate().translation().y();
+    new_pose.position.z = 0;
+    new_pose.orientation = tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
 
     RobotLaser *laser = dynamic_cast<RobotLaser*>(v->userData());
     if (laser){
@@ -62,20 +66,25 @@ void GraphRosPublisher::publishGraph(){
 	  
       size_t s= 0;
       while ( s<wscan.size()){
-	geometry_msgs::Point32 point;
-	point.x = wscan[s].x();
-	point.y = wscan[s].y();
-	pcloud.points.push_back(point);
+	sensor_msgs::PointCloud& point_cloud = _graph.isMyVertex(v)
+						? map_self : map_others;
+	point_cloud.points.resize(point_cloud.points.size() + 1);
+	geometry_msgs::Point32& new_point = point_cloud.points.back();
+	new_point.x = wscan[s].x();
+	new_point.y = wscan[s].y();
 	
 	s = s+10;
       }
     }
-    i++;
   }
   
-  traj.header.frame_id = _fixedFrame;
-  pcloud.header.frame_id = traj.header.frame_id;
-  _publm.publish(pcloud);
-  _pubtj.publish(traj);
+  pose_self.header.frame_id = pose_others.header.frame_id 
+			    = map_self.header.frame_id 
+			    = map_others.header.frame_id 
+			    = _fixedFrame;
+  _pubMapSelf.publish(map_self);
+  _pubPoseSelf.publish(pose_self);
+  _pubMapOthers.publish(map_others);
+  _pubPoseOthers.publish(pose_others);
 
 }

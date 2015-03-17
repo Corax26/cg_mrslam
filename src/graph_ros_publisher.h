@@ -51,17 +51,19 @@ using namespace std;
 class GraphRosPublisher
 {
  public:
-  GraphRosPublisher(OptimizableGraph* graph, string fixedFrame);
+  GraphRosPublisher(GraphSLAM& graph, string fixedFrame);
 
   void publishGraph();
 
  protected:
   ros::NodeHandle _nh;
 
-  ros::Publisher _pubtj;
-  ros::Publisher _publm;
+  ros::Publisher _pubPoseSelf;
+  ros::Publisher _pubPoseOthers;
+  ros::Publisher _pubMapSelf;
+  ros::Publisher _pubMapOthers;
   
-  OptimizableGraph* _graph;
+  GraphSLAM& _graph;
   string _fixedFrame;
 };
 

@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
   gslam.setInitialData(odomPosk_1, rlaser);
 
-  GraphRosPublisher graphPublisher(gslam.graph(), fixedFrame);
+  GraphRosPublisher graphPublisher(gslam, fixedFrame);
 
   ////////////////////
   //Setting up network
