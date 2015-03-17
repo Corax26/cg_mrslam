@@ -62,6 +62,10 @@ class MRGraphSLAM : public GraphSLAM
 
   CondensedGraphBuffer condensedGraphs;
 
+  // Set when data is added to condensedGraphs (inClosures or outCondensedGraphs),
+  // reset when constructCondensedGraphMessage() is called
+  bool condensedGraphsModified;
+
   MRClosureBuffer interRobotClosures; //Contains already matched vertices + edges
   MRClosureBuffer interRobotVertices; //Contains non-matched vertices
 

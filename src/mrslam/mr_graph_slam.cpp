@@ -30,6 +30,7 @@
 
 
 MRGraphSLAM::MRGraphSLAM() :condensedGraphs(GraphSLAM::graph()), 
+			    condensedGraphsModified(false),
 			    maxScoreMR(GraphSLAM::maxScore), 
 			    minInliersMR(GraphSLAM::minInliers), 
 			    windowMRLoopClosure(GraphSLAM::windowLoopClosure){
@@ -100,11 +101,12 @@ void MRGraphSLAM::checkInterRobotClosures(){
 	    }
 	  }
 	  cout << endl;
-	  if (inClosures.size())
-	    condensedGraphs.insertInClosure(robotId, inClosures);
+	  if (inClosures.size()){
+	      condensedGraphs.insertInClosure(robotId, inClosures);
+	      condensedGraphsModified = true;
+	  }
 	}
       }
-      
     }
   }
 }
@@ -233,7 +235,7 @@ void MRGraphSLAM::addInterRobotData(ComboMessage* cmsg, OptimizableGraph::Vertex
 	closure.addEdge(ne);
 
 	interRobotClosures.insert(closure, cmsg->robotId());
-      }else{cerr << "Not Robot Detected in Range" << endl;}
+      }else{cerr << "No Robot Detected in Range" << endl;}
  
     }  else {
       ClosureBuffer c;
@@ -333,6 +335,7 @@ void MRGraphSLAM::addInterRobotData(CondensedGraphMessage* gmsg){
     if (closures.size()){
       condensedGraphs.insertOutClosure(gmsg->robotId(), closures);
       condensedGraphs.computeCondensedGraph(gmsg->robotId());
+      condensedGraphsModified = true;
     }
 
   }
@@ -377,6 +380,8 @@ void MRGraphSLAM::addInterRobotData(CondensedGraphMessage* gmsg){
       }
     }
     
+    // No need to update condensedGraphsModified, it won't add data to
+    // constructCondensedGraphMessage()
     if (edges.size())
       condensedGraphs.insertEdgesFromRobot(gmsg->robotId(), edges);
   }
@@ -594,6 +599,9 @@ ComboMessage* MRGraphSLAM::constructComboMessage(){
 
 CondensedGraphMessage* MRGraphSLAM::constructCondensedGraphMessage(int idRobotTo){
   boost::mutex::scoped_lock lockg(graphMutex);
+
+  if (!condensedGraphsModified) return 0;
+  condensedGraphsModified = false;
 
   RobotMessage* msg = factory->constructMessage(7);
   CondensedGraphMessage* gmsg = dynamic_cast<CondensedGraphMessage*>(msg);
