@@ -115,7 +115,7 @@ void GraphComm::send(RobotMessage* cmsg, int rto){
   size_t sizebufc = (c) ? (c-bufferc):0;
  
   if (sizebufc){
-    std::cerr << "Send info to robot: " << rto << ". Address: " << to_addr.str() << ". Sent: " << sizebufc  << " bytes" << std::endl;
+    //std::cerr << "Send info to robot: " << rto << ". Address: " << to_addr.str() << ". Sent: " << sizebufc  << " bytes" << std::endl;
     sendto(_iSock, &bufferc, sizebufc, 0, (struct sockaddr*) &toSockAddr, sizeof(toSockAddr));
     if (_typeExperiment == REAL_EXPERIMENT)
       _rh->publishSentMsg(cmsg);
@@ -147,7 +147,7 @@ void GraphComm::sendToThrd(){
 	//GraphMessage* gmsg = _gslam->constructGraphMessage(rto);
 
 	if (gmsg){
-	  std::cerr << "Send condensed graph" << std::endl;
+	  //std::cerr << "Send condensed graph" << std::endl;
 	  send(gmsg, rto);
 	}
       }
