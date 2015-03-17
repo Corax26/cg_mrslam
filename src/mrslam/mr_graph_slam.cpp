@@ -619,36 +619,6 @@ CondensedGraphMessage* MRGraphSLAM::constructCondensedGraphMessage(int idRobotTo
   if (cemsg)
     *emsg = *cemsg;
  
-  /*
-    OptimizableGraph::EdgeSet* subgraphRobot = condensedGraphs.outCondensedGraph(idRobotTo);
-    if (subgraphRobot){
-    gmsg->edgeVector.resize(subgraphRobot->size());
-    int i = 0;
-    for (OptimizableGraph::EdgeSet::const_iterator it = subgraphRobot->begin(); it != subgraphRobot->end(); ++it) {
-    EdgeSE2* e = dynamic_cast<EdgeSE2*>(*it);
-    //cerr << "Sending Edge from: " << e->vertices()[0]->id() << " to: " << e->vertices()[1]->id() << endl;
-      
-    VertexSE2* vfrom =  (VertexSE2*)(e->vertices()[0]);
-    VertexSE2* vto =  (VertexSE2*)(e->vertices()[1]);
-
-    gmsg->edgeVector[i].idfrom = vfrom->id();
-    gmsg->edgeVector[i].idto = vto->id();
-    gmsg->edgeVector[i].estimate[0] = e->measurement().translation().x();
-    gmsg->edgeVector[i].estimate[1] = e->measurement().translation().y();
-    gmsg->edgeVector[i].estimate[2] = e->measurement().rotation().angle();
-
-    Matrix3d inf = e->information();
-    gmsg->edgeVector[i].information[0] = inf(0,0);
-    gmsg->edgeVector[i].information[1] = inf(0,1);
-    gmsg->edgeVector[i].information[2] = inf(0,2);
-    gmsg->edgeVector[i].information[3] = inf(1,1);
-    gmsg->edgeVector[i].information[4] = inf(1,2);      
-    gmsg->edgeVector[i].information[5] = inf(2,2);
-
-    i++;
-    }
-    }*/
-  
   //if (inClosuresRobot || subgraphRobot)
   if (inClosuresRobot || cemsg)
     return gmsg;
