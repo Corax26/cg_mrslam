@@ -49,11 +49,11 @@ void MRGraphSLAM::setIdRobot(int idRobot){
   GraphSLAM::setIdRobot(idRobot);
 }
 
-void MRGraphSLAM::setInterRobotClosureParams(double maxScoreMR_, int minInliersMR_, int windowMRLoopClosure_){
+void MRGraphSLAM::setInterRobotClosureParams(double maxScoreMR_, int minInliersMR_, int windowMRLoopClosure_, bool detectRobots_){
   maxScoreMR = maxScoreMR_;
   minInliersMR = minInliersMR_;
   windowMRLoopClosure = windowMRLoopClosure_;
-
+  detectRobots = detectRobots_;
 }
 
 void MRGraphSLAM::checkInterRobotClosures(){
@@ -215,7 +215,7 @@ void MRGraphSLAM::addInterRobotData(ComboMessage* cmsg, OptimizableGraph::Vertex
     if (shouldIAdd){
       cerr << "Found inter robot match" << endl;
       double score;
-      bool robotDetected = _LCMatcher.verifyMatching(referenceVset, referenceVertex, vset, v, transf, &score); 
+      bool robotDetected = !detectRobots || _LCMatcher.verifyMatching(referenceVset, referenceVertex, vset, v, transf, &score); 
       if (robotDetected){
 	//cerr << "Adding edge from " << referenceVertex->id() << " to " << v->id() 
 	//     << " Estimate: "  << transf.translation().x() << " " << transf.translation().y() << " " << transf.rotation().angle() << endl;
@@ -287,7 +287,7 @@ void MRGraphSLAM::findInterRobotConstraints(){
 	double score;
 	OptimizableGraph::VertexSet vset;
 	vset.insert(v);
-	bool robotDetected = _LCMatcher.verifyMatching(referenceVset, referenceVertex, vset, v, transf, &score); 
+	bool robotDetected = !detectRobots || _LCMatcher.verifyMatching(referenceVset, referenceVertex, vset, v, transf, &score); 
 	if (robotDetected){
 	  //If matched, remove from interRobotVertices, add to interRobotClosures
 	  EdgeSE2 *ne = new EdgeSE2;

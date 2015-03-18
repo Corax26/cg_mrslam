@@ -48,6 +48,7 @@ int main(int argc, char **argv)
   int  minInliers, minInliersMR;
   int windowLoopClosure, windowMRLoopClosure;
   double inlierThreshold;
+  bool detectRobots;
   int idRobot;
   int nRobots;
   std::string outputFilename;
@@ -64,6 +65,7 @@ int main(int argc, char **argv)
   arg.param("maxScoreMR",    maxScoreMR, 0.15,  "score of the intra-robot matcher, the higher the less matches");
   arg.param("minInliersMR",    minInliersMR, 5,     "min inliers for the intra-robot loop closure");
   arg.param("windowMRLoopClosure",  windowMRLoopClosure, 15,   "sliding window for the intra-robot loop closures");
+  arg.param("detectRobots", detectRobots, true,   "whether other robots should be detected (thus in range) when trying to match their data");
   arg.param("odometryTopic", odometryTopic, "odom", "odometry ROS topic");
   arg.param("scanTopic", scanTopic, "scan", "scan ROS topic");
   arg.param("fixedFrame", fixedFrame, "odom", "fixed frame to visualize the graph with ROS Rviz");
@@ -93,7 +95,7 @@ int main(int argc, char **argv)
   int baseId = 10000;
   gslam.setBaseId(baseId);
   gslam.init(resolution, kernelRadius, windowLoopClosure, maxScore, inlierThreshold, minInliers);
-  gslam.setInterRobotClosureParams(maxScoreMR, minInliersMR, windowMRLoopClosure);
+  gslam.setInterRobotClosureParams(maxScoreMR, minInliersMR, windowMRLoopClosure, detectRobots);
 
   RobotLaser* rlaser = rh.getLaser();
 
