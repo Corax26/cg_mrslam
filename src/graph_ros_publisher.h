@@ -44,6 +44,7 @@
 #include "slam/graph_slam.h"
 
 #include <string>
+#include <vector>
 
 using namespace g2o;
 using namespace std;
@@ -51,15 +52,15 @@ using namespace std;
 class GraphRosPublisher
 {
  public:
-  GraphRosPublisher(GraphSLAM& graph, string fixedFrame);
+  GraphRosPublisher(GraphSLAM& graph, string fixedFrame, int nRobots);
 
   void publishGraph();
 
  protected:
   ros::NodeHandle _nh;
 
-  ros::Publisher _pubPoseSelf;
-  ros::Publisher _pubPoseOthers;
+  // One publisher per robot (vector indexed by the robot ID)
+  std::vector<ros::Publisher> _pubPosesRobots;
   ros::Publisher _pubMapSelf;
   ros::Publisher _pubMapOthers;
   

@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
   gslam.setInitialData(odomPosk_1, rlaser);
 
-  GraphRosPublisher graphPublisher(gslam, fixedFrame);
+  GraphRosPublisher graphPublisher(gslam, fixedFrame, nRobots);
 
   ////////////////////
   //Setting up network

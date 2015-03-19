@@ -28,63 +28,88 @@
 
 #include "graph_ros_publisher.h"
 
-GraphRosPublisher::GraphRosPublisher(GraphSLAM& graph, string fixedFrame)
+#include <sstream>
+#include <map>
+
+GraphRosPublisher::GraphRosPublisher(GraphSLAM& graph, string fixedFrame,
+                                     int nRobots)
     : _graph(graph), _fixedFrame(fixedFrame) {
 
-  _pubPoseSelf = _nh.advertise<geometry_msgs::PoseArray>("pose_self", 1);
-  _pubPoseOthers = _nh.advertise<geometry_msgs::PoseArray>("pose_others", 1);
-  _pubMapSelf = _nh.advertise<sensor_msgs::PointCloud>("map_self", 1);
-  _pubMapOthers = _nh.advertise<sensor_msgs::PointCloud>("map_others", 1);
+  for (int i = 0; i < nRobots; ++i){
+    std::ostringstream sstream;
+    sstream << "poses_robot_" << i;
+    _pubPosesRobots.push_back(_nh.advertise<geometry_msgs::PoseArray>(sstream.str(), 
+                                                                      1, true));
+  }
+  _pubMapSelf = _nh.advertise<sensor_msgs::PointCloud>("map_self", 1, true);
+  _pubMapOthers = _nh.advertise<sensor_msgs::PointCloud>("map_others", 1, true);
 }
 
 void GraphRosPublisher::publishGraph(){
+  
+  // First build a map from the unordered_map containing the vertices to sort
+  // them
+  std::map<int, HyperGraph::Vertex*> vertices;
+  for (HyperGraph::VertexIDMap::const_iterator it=_graph.graph()->vertices().begin(); 
+       it!=_graph.graph()->vertices().end(); ++it){
+    vertices.insert(*it);
+  }
 
-  assert(_graph.graph() && "Cannot publish: undefined graph");
-
-  geometry_msgs::PoseArray pose_self;
   sensor_msgs::PointCloud map_self;
-  geometry_msgs::PoseArray pose_others;
   sensor_msgs::PointCloud map_others;
-  for (OptimizableGraph::VertexIDMap::iterator it=_graph.graph()->vertices().begin(); it!=_graph.graph()->vertices().end(); ++it) {
-    VertexSE2* v = (VertexSE2*) (it->second);
-    geometry_msgs::PoseArray& pose_list = _graph.isMyVertex(v)
-					    ? pose_self : pose_others;
-    pose_list.poses.resize(pose_list.poses.size() + 1);
-    geometry_msgs::Pose& new_pose = pose_list.poses.back();
-    new_pose.position.x = v->estimate().translation().x();
-    new_pose.position.y = v->estimate().translation().y();
-    new_pose.position.z = 0;
-    new_pose.orientation = tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
 
-    RobotLaser *laser = dynamic_cast<RobotLaser*>(v->userData());
-    if (laser){
-      RawLaser::Point2DVector vscan = laser->cartesian();
-      SE2 trl = laser->laserParams().laserPose;
-      SE2 transf = v->estimate() * trl;
-      RawLaser::Point2DVector wscan;
-      ScanMatcher::applyTransfToScan(transf, vscan, wscan);
-	  
-      size_t s= 0;
-      while ( s<wscan.size()){
-	sensor_msgs::PointCloud& point_cloud = _graph.isMyVertex(v)
-						? map_self : map_others;
-	point_cloud.points.resize(point_cloud.points.size() + 1);
-	geometry_msgs::Point32& new_point = point_cloud.points.back();
-	new_point.x = wscan[s].x();
-	new_point.y = wscan[s].y();
-	
-	s = s+10;
+  const int base_id = _graph.baseId();
+  const int my_robot_id = _graph.idRobot();
+  std::map<int, HyperGraph::Vertex*>::const_iterator it, start, end;
+  end = vertices.begin(); // Make the first iteration work
+  geometry_msgs::PoseArray poses;
+
+  for (int robot_id = 0; static_cast<size_t>(robot_id) < _pubPosesRobots.size(); 
+       ++robot_id){
+    poses.poses.clear();
+
+    // Find vertices from robot_id
+    start = end;
+    end   = vertices.upper_bound((robot_id+1) * base_id - 1);
+    
+    for (it = start; it != end; ++it){
+      VertexSE2* v = static_cast<VertexSE2*>(it->second);
+      poses.poses.resize(poses.poses.size() + 1);
+      geometry_msgs::Pose& new_pose = poses.poses.back();
+      new_pose.position.x = v->estimate().translation().x();
+      new_pose.position.y = v->estimate().translation().y();
+      new_pose.position.z = 0;
+      new_pose.orientation = tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
+
+      RobotLaser *laser = dynamic_cast<RobotLaser*>(v->userData());
+      if (laser){
+        RawLaser::Point2DVector vscan = laser->cartesian();
+        SE2 trl = laser->laserParams().laserPose;
+        SE2 transf = v->estimate() * trl;
+        RawLaser::Point2DVector wscan;
+        ScanMatcher::applyTransfToScan(transf, vscan, wscan);
+            
+        size_t s= 0;
+        while (s<wscan.size()){
+          sensor_msgs::PointCloud& point_cloud = (robot_id == my_robot_id
+                                                  ? map_self : map_others);
+          point_cloud.points.resize(point_cloud.points.size() + 1);
+          geometry_msgs::Point32& new_point = point_cloud.points.back();
+          new_point.x = wscan[s].x();
+          new_point.y = wscan[s].y();
+          
+          s = s+10;
+        }
       }
+    }
+
+    if (!poses.poses.empty()){
+      poses.header.frame_id = _fixedFrame;
+      _pubPosesRobots[robot_id].publish(poses);
     }
   }
   
-  pose_self.header.frame_id = pose_others.header.frame_id 
-			    = map_self.header.frame_id 
-			    = map_others.header.frame_id 
-			    = _fixedFrame;
+  map_self.header.frame_id = map_others.header.frame_id = _fixedFrame;
   _pubMapSelf.publish(map_self);
-  _pubPoseSelf.publish(pose_self);
   _pubMapOthers.publish(map_others);
-  _pubPoseOthers.publish(pose_others);
-
 }

@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     gtgraph.setInitialData(currEst, rlaser);
   }
   
-  GraphRosPublisher graphPublisher(gslam, fixedFrame);
+  GraphRosPublisher graphPublisher(gslam, fixedFrame, nRobots);
 
   ////////////////////
   //Setting up network
