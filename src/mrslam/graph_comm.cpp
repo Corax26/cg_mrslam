@@ -39,16 +39,15 @@ GraphComm::GraphComm (MRGraphSLAM* gslam, int idRobot, int nRobots, std::string 
 
   _gslam = gslam;
 
-  std::stringstream my_addr;
-  my_addr << base_addr << idRobot + IP_OFFSET;
-  std::cerr << "My address: " << my_addr.str() << std::endl;
+	std::pair<std::string, uint16_t> my_addr = robotAddress(idRobot);
+  std::cerr << "My address: " << my_addr.first << ':' << my_addr.second << std::endl;
 
   _iSock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
 
   struct sockaddr_in sockAddr;
   sockAddr.sin_family=AF_INET;
-  sockAddr.sin_addr.s_addr=inet_addr(my_addr.str().c_str());
-  sockAddr.sin_port=htons(42001);
+  sockAddr.sin_addr.s_addr=inet_addr(my_addr.first.c_str());
+  sockAddr.sin_port=htons(my_addr.second);
   bind(_iSock,(struct sockaddr*)&sockAddr,sizeof(sockAddr));
 
 }
@@ -102,20 +101,19 @@ bool GraphComm::robotsInRange(std::vector<int>& robotsToSend){
 }
 
 void GraphComm::send(RobotMessage* cmsg, int rto){
-  std::stringstream to_addr;
-  to_addr << _base_addr << rto + IP_OFFSET;
+	std::pair<std::string, uint16_t> addr_dest = robotAddress(rto);
 
   struct sockaddr_in toSockAddr;
   toSockAddr.sin_family=AF_INET;
-  toSockAddr.sin_addr.s_addr=inet_addr(to_addr.str().c_str());
-  toSockAddr.sin_port=htons(42001);
+  toSockAddr.sin_addr.s_addr=inet_addr(addr_dest.first.c_str());
+  toSockAddr.sin_port=htons(addr_dest.second);
   
   char bufferc [MAX_LENGTH_MSG];
   char* c = cmsg->toCharArray(bufferc, MAX_LENGTH_MSG); //  create buffer;
   size_t sizebufc = (c) ? (c-bufferc):0;
  
   if (sizebufc){
-    //std::cerr << "Send info to robot: " << rto << ". Address: " << to_addr.str() << ". Sent: " << sizebufc  << " bytes" << std::endl;
+    //std::cerr << "Send info to robot: " << rto << ". Address: " << addr_dest.first << ':' << addr_dest.second << ". Sent: " << sizebufc  << " bytes" << std::endl;
     sendto(_iSock, &bufferc, sizebufc, 0, (struct sockaddr*) &toSockAddr, sizeof(toSockAddr));
     if (_typeExperiment == REAL_EXPERIMENT)
       _rh->publishSentMsg(cmsg);
@@ -210,6 +208,14 @@ void GraphComm::processQueueThrd(){
   }
 }
 
+std::pair<std::string, uint16_t> GraphComm::robotAddress(int idRobot){
+  std::stringstream addr;
+  addr << _base_addr << (_typeExperiment == REAL_EXPERIMENT 
+							? idRobot + IP_OFFSET : 1);
+  uint16_t port = 42001 + idRobot;
+	
+	return std::make_pair(addr.str(), port);
+}
 
 
 

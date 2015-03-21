@@ -70,6 +70,7 @@ class GraphComm
   void receiveFromThrd();
   void processQueueThrd();
   void init_threads();
+  std::pair<std::string, uint16_t> robotAddress(int idRobot);
 
   ////////////////////
   MRGraphSLAM* _gslam;
