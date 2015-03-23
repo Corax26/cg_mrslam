@@ -41,8 +41,10 @@ GraphRosPublisher::GraphRosPublisher(GraphSLAM& graph, string fixedFrame,
     _pubPosesRobots.push_back(_nh.advertise<geometry_msgs::PoseArray>(sstream.str(), 
                                                                       1, true));
   }
+  _pubPosesAll = _nh.advertise<geometry_msgs::PoseArray>("poses_all", 1);
   _pubMapSelf = _nh.advertise<sensor_msgs::PointCloud>("map_self", 1, true);
   _pubMapOthers = _nh.advertise<sensor_msgs::PointCloud>("map_others", 1, true);
+  _pubMapAll = _nh.advertise<sensor_msgs::PointCloud>("map_all", 1, true);
 }
 
 void GraphRosPublisher::publishGraph(){
@@ -57,16 +59,18 @@ void GraphRosPublisher::publishGraph(){
 
   sensor_msgs::PointCloud map_self;
   sensor_msgs::PointCloud map_others;
+  sensor_msgs::PointCloud map_all;
 
   const int base_id = _graph.baseId();
   const int my_robot_id = _graph.idRobot();
   std::map<int, HyperGraph::Vertex*>::const_iterator it, start, end;
   end = vertices.begin(); // Make the first iteration work
-  geometry_msgs::PoseArray poses;
+  geometry_msgs::PoseArray poses_robot;
+  geometry_msgs::PoseArray poses_all;
 
-  for (int robot_id = 0; static_cast<size_t>(robot_id) < _pubPosesRobots.size(); 
+  for (int robot_id = 0; static_cast<size_t>(robot_id) < _pubPosesRobots.size();
        ++robot_id){
-    poses.poses.clear();
+    poses_robot.poses.clear();
 
     // Find vertices from robot_id
     start = end;
@@ -74,12 +78,15 @@ void GraphRosPublisher::publishGraph(){
     
     for (it = start; it != end; ++it){
       VertexSE2* v = static_cast<VertexSE2*>(it->second);
-      poses.poses.resize(poses.poses.size() + 1);
-      geometry_msgs::Pose& new_pose = poses.poses.back();
+      poses_robot.poses.resize(poses_robot.poses.size() + 1);
+      geometry_msgs::Pose& new_pose = poses_robot.poses.back();
       new_pose.position.x = v->estimate().translation().x();
       new_pose.position.y = v->estimate().translation().y();
       new_pose.position.z = 0;
-      new_pose.orientation = tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
+      new_pose.orientation = 
+					tf::createQuaternionMsgFromYaw(v->estimate().rotation().angle());
+
+			poses_all.poses.push_back(new_pose);
 
       RobotLaser *laser = dynamic_cast<RobotLaser*>(v->userData());
       if (laser){
@@ -97,19 +104,26 @@ void GraphRosPublisher::publishGraph(){
           geometry_msgs::Point32& new_point = point_cloud.points.back();
           new_point.x = wscan[s].x();
           new_point.y = wscan[s].y();
+
+					map_all.points.push_back(new_point);
           
           s = s+10;
         }
       }
     }
 
-    if (!poses.poses.empty()){
-      poses.header.frame_id = _fixedFrame;
-      _pubPosesRobots[robot_id].publish(poses);
+    if (!poses_robot.poses.empty()){
+      poses_robot.header.frame_id = _fixedFrame;
+      _pubPosesRobots[robot_id].publish(poses_robot);
     }
   }
   
-  map_self.header.frame_id = map_others.header.frame_id = _fixedFrame;
+  map_self.header.frame_id = map_others.header.frame_id 
+													 = map_all.header.frame_id 
+													 = poses_all.header.frame_id 
+													 = _fixedFrame;
   _pubMapSelf.publish(map_self);
   _pubMapOthers.publish(map_others);
+	_pubPosesAll.publish(poses_all);
+	_pubMapAll.publish(map_all);
 }

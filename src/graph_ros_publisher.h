@@ -61,8 +61,10 @@ class GraphRosPublisher
 
   // One publisher per robot (vector indexed by the robot ID)
   std::vector<ros::Publisher> _pubPosesRobots;
+  ros::Publisher _pubPosesAll;
   ros::Publisher _pubMapSelf;
   ros::Publisher _pubMapOthers;
+  ros::Publisher _pubMapAll;
   
   GraphSLAM& _graph;
   string _fixedFrame;
