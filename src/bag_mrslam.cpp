@@ -53,6 +53,7 @@ int main(int argc, char **argv)
   int nRobots;
   std::string outputFilename;
   std::string odometryTopic, scanTopic, fixedFrame;
+  double translation_threshold, rotation_threshold;
 
   arg.param("resolution",  resolution, 0.025, "resolution of the matching grid");
   arg.param("maxScore",    maxScore, 0.15,     "score of the matcher, the higher the less matches");
@@ -66,6 +67,8 @@ int main(int argc, char **argv)
   arg.param("minInliersMR",    minInliersMR, 5,     "min inliers for the intra-robot loop closure");
   arg.param("windowMRLoopClosure",  windowMRLoopClosure, 15,   "sliding window for the intra-robot loop closures");
   arg.param("noRobotDetection", detectRobots, true,   "disable the detection of other robots when trying to match their data");
+  arg.param("transThreshold", translation_threshold, 0.25, "minimum translation (in m) before updating graph");
+  arg.param("rotThreshold", rotation_threshold, M_PI_4,  "minimum rotation (in rad) before updating graph");
   arg.param("odometryTopic", odometryTopic, "odom", "odometry ROS topic");
   arg.param("scanTopic", scanTopic, "scan", "scan ROS topic");
   arg.param("fixedFrame", fixedFrame, "odom", "fixed frame to visualize the graph with ROS Rviz");
@@ -120,8 +123,8 @@ int main(int argc, char **argv)
 
     odomPosk_1 = odomPosk;
 
-    if((distanceSE2(gslam.lastVertex()->estimate(), currEst) > 0.25) || 
-       (fabs(gslam.lastVertex()->estimate().rotation().angle()-currEst.rotation().angle()) > M_PI_4)){
+    if((distanceSE2(gslam.lastVertex()->estimate(), currEst) > translation_threshold) || 
+       (fabs(gslam.lastVertex()->estimate().rotation().angle()-currEst.rotation().angle()) > rotation_threshold)){
       //Add new data
       RobotLaser* laseri = rh.getLaser();
 
